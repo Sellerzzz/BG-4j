@@ -2,8 +2,8 @@
 wget -q -O Stats.txt https://wiki.thebiogrid.org/doku.php/statistics
 grep -i "Current Build Statistics (" Stats.txt | head -1 > tbuild
 rm Stats.txt
-grep -o -P '(?<=\().*(?=\))' tbuild > vbuild
-	mv vbuild build
+grep -o -P '(?<=\().*(?=\))' tbuild > build
+	rm tbuild
 
 #download latest dataset
 	echo Downloading latest build...
@@ -27,7 +27,7 @@ rfile1="$n".txt
 rfile2="$m".txt
 
 cut -f 2,4,6,8,10,16 $CURR > $rfile1
-cut -f 3,5,7,9,11,17 $CURR | tail +2 > $rfile2
+cut -f 3,5,7,9,11,17 $CURR | tail -n +2 > $rfile2
 
 cat $rfile1 $rfile2 > BioGRID-nodes-"$BUILD".tab2.txt
 NODES=BioGRID-nodes-"$BUILD".tab2.txt
@@ -47,19 +47,20 @@ tail -n +2 $RELAS > temp
 sed -i '1i BioGRID Interaction ID\t:START_ID\t:END_ID\tBioGRID ID Interactor A\tBioGRID ID Interactor B\tSystematic Name Interactor A\tSystematic Name Interactor B\tOfficial Symbol Interactor A\tOfficial Symbol Interactor B\tSynonyms Interactor A\tSynonyms Interactor B\tExperimental System\tExperimental System Type\tAuthor\tPubmed ID\tOrganism Interactor A\tOrganism Interactor \tThroughput\tScore\tModification\tPhenotypes\tQualifications\tTags\tSource Database\t:TYPE' temp
 mv temp $RELAS
 
-#pass nodes and relaations to cypher-shell or neo4j-import NEXT TO DO
+#pass nodes and relations to cypher-shell or neo4j-import
 
 neo4j stop
+
 #neo4j-admin dump --database=BioGRID.db --to=/root/Research/Neo4j/Backup #Dump current db
 #neo4j-admin import --database="BioGRID-$BUILD.db" --mode=csv --delimiter="TAB" --nodes:ID="$NODES" --relationships:TYPE="$RELAS"
 
-echo 'Importing data to /var/lib/neo4j/data/databases/BioGRID-$BUILD.db'
+	echo "Importing data to /var/lib/neo4j/data/databases/BioGRID-"$BUILD".db"
 
 mkdir /var/lib/neo4j/data/databases/BioGRID-$BUILD.db
 cp "$NODES" /var/lib/neo4j/data/databases/BioGRID-$BUILD.db
 cp "$RELAS" /var/lib/neo4j/data/databases/BioGRID-$BUILD.db
 sudo neo4j-import --into /var/lib/neo4j/data/databases/BioGRID-$BUILD.db/ --delimiter 'TAB' --nodes "$NODES" --relationships "$RELAS"
 
-echo 'BioGRID 4 Neo4j successfully installed'
-echo 'NOTE: you will now need to change your active database within the neo4j.conf file to load from the updated database (default path: "/etc/neo4j/neo4j.conf") i.e. redefine "dbms.active_database=graph.db" to dbms.active_database=BioGRID-$BUILD before starting neo4j'
+	echo 'BioGRID 4 Neo4j successfully installed'
+	echo 'NOTE: you will now need to change your active database within the neo4j.conf file to load from the updated database (default path: "/etc/neo4j/neo4j.conf") i.e. redefine "dbms.active_database=graph.db" to "dbms.active_database=BioGRID-'"$BUILD"'" before starting neo4j.'
 exit
